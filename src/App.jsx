@@ -103,15 +103,13 @@ const App = () => {
   }, [resignationDate]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8 flex flex-col items-center">
-      <div className="max-w-md w-full space-y-5">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 flex flex-col items-center">
+      <div className="max-w-md w-full space-y-4">
         
         {/* Header */}
-        <header className="flex justify-between items-center py-2 px-1">
+        <header className="flex justify-between items-center py-0 px-1 -mb-2">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-lg">
-              <Briefcase size={20} />
-            </div>
+            <img src="/exit_logo.png" alt="퇴사 디데이 로고" className="w-10 h-10 rounded-xl object-contain" />
             <h1 className="text-xl font-bold tracking-tight text-slate-800">퇴사 디데이</h1>
           </div>
           <button 
@@ -124,28 +122,22 @@ const App = () => {
 
         {/* Dashboard */}
         <div className="bg-white rounded-[40px] p-10 shadow-2xl shadow-slate-200 border border-slate-100 text-center relative overflow-hidden">
-          {/* Target Date Header */}
-          <div className="mb-2 flex flex-col items-center">
-            <h2 className="text-xl font-black text-slate-800 tracking-tight border-b-2 border-emerald-100 pb-1 px-4">
-              {formattedTargetDate}
-            </h2>
+          <p className="text-slate-400 font-normal text-sm">남은 출근</p>
+          <div className="flex justify-center items-baseline gap-1 mt-1 mb-9">
+            <span className="text-9xl font-black text-emerald-500 tracking-tighter leading-none">{counts.work}</span>
+            <span className="text-2xl font-bold text-slate-400">번</span>
           </div>
-
-          <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] mt-6">남은 진짜 출근 횟수</p>
-          <div className="flex justify-center items-baseline gap-1 -mt-2">
-            <span className="text-9xl font-black text-emerald-600 tracking-tighter">
-              {counts.work}
-            </span>
-            <span className="text-2xl font-bold text-slate-400 uppercase tracking-tighter">번</span>
-          </div>
-
-          <div className="flex justify-center gap-3 mt-8">
-            <div className={`px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-lg transition-all ${counts.leave >= totalAnnualLeave && totalAnnualLeave > 0 ? 'bg-orange-600 text-white shadow-orange-100' : 'bg-slate-800 text-white shadow-slate-100'}`}>
-               연차 사용 {counts.leave} / {totalAnnualLeave}일
+          <div className="grid grid-cols-2 gap-3 text-left">
+            <div className="flex flex-col gap-1.5 px-4 py-3">
+              <span className="text-[11px] te00 font-normal">퇴사 예정일</span>
+              <span className="text-base font-bold text-slate-800">{formattedTargetDate}</span>
+            </div>
+            <div className="flex flex-col gap-1.5 bg-emerald-50 rounded-[18px] px-4 py-3">
+              <span className="text-[11px] text-slate-400 font-normal">사용 가능한 연차</span>
+              <span className="text-base font-bold text-slate-800">{totalAnnualLeave - counts.leave}일</span>
             </div>
           </div>
         </div>
-
         {/* Selection Mode Selector */}
         <div className="grid grid-cols-2 gap-3">
           <button 
@@ -223,7 +215,7 @@ const App = () => {
         <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">기본 설정</h2>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-colors focus-within:border-emerald-200 group">
               <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <CalendarIcon size={16} className="text-emerald-500"/> 퇴사 목표일
@@ -296,3 +288,24 @@ const App = () => {
 };
 
 export default App;
+
+// Dashboard div 내부 교체 예시 (설명용, 실제 교체는 return 문에서 해야 함)
+// <div className="Dashboard 관련 className">
+//   <p className="text-slate-400 font-normal text-sm">남은 출근</p>
+//   <div className="flex justify-center items-baseline gap-1 mt-1 mb-9">
+//     <span className="text-9xl font-black text-emerald-500 tracking-tighter leading-none">
+//       {counts.work}
+//     </span>
+//     <span className="text-2xl font-bold text-slate-400">번</span>
+//   </div>
+//   <div className="grid grid-cols-2 gap-3 text-left">
+//     <div className="flex flex-col gap-1.5 px-4 py-3">
+//       <span className="text-[11px] text-slate-400 font-normal">퇴사 예정일</span>
+//       <span className="text-base font-bold text-slate-800">{formattedTargetDate}</span>
+//     </div>
+//     <div className="flex flex-col gap-1.5 bg-emerald-50 rounded-[18px] px-4 py-3">
+//       <span className="text-[11px] text-slate-400 font-normal">사용 가능한 연차</span>
+//       <span className="text-base font-bold text-slate-800">{totalAnnualLeave - counts.leave}일</span>
+//     </div>
+//   </div>
+// </div>
