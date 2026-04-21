@@ -109,7 +109,7 @@ const App = () => {
         {/* Header */}
         <header className="flex justify-between items-center py-0 px-1 -mb-2">
           <div className="flex items-center gap-2">
-            <img src="/exit_logo.png" alt="퇴사 디데이 로고" className="w-10 h-10 rounded-xl object-contain" />
+            <img src="/logo.png" alt="퇴사 디데이 로고" className="w-10 h-10 rounded-xl object-contain" />
             <h1 className="text-xl font-bold tracking-tight text-slate-800">퇴사 디데이</h1>
           </div>
           <button 
