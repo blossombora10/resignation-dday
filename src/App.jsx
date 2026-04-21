@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as CalendarIcon, Settings, Briefcase, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight, MousePointer2, Minus, Plus, AlertCircle } from 'lucide-react';
 
+const STORAGE_KEYS = {
+  resignationDate: 'resignationDate',
+  totalAnnualLeave: 'totalAnnualLeave',
+  excludeWeekends: 'excludeWeekends',
+  excludeHolidays: 'excludeHolidays',
+  selectionMode: 'selectionMode',
+  manualOverrides: 'manualOverrides',
+};
+
 const App = () => {
   const getDefaultResignationDate = () => {
     const d = new Date();
@@ -8,14 +17,58 @@ const App = () => {
     return d.toISOString().split('T')[0];
   };
 
-  const [resignationDate, setResignationDate] = useState(getDefaultResignationDate());
+  const [resignationDate, setResignationDate] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.resignationDate);
+    return saved || getDefaultResignationDate();
+  });
   const [viewDate, setViewDate] = useState(new Date());
-  const [totalAnnualLeave, setTotalAnnualLeave] = useState(10); // 총 보유 연차 개수
-  const [excludeWeekends, setExcludeWeekends] = useState(false);
-  const [excludeHolidays, setExcludeHolidays] = useState(false);
+  const [totalAnnualLeave, setTotalAnnualLeave] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.totalAnnualLeave);
+    const parsed = Number(saved);
+    return Number.isFinite(parsed) ? parsed : 10;
+  }); // 총 보유 연차 개수
+  const [excludeWeekends, setExcludeWeekends] = useState(() => localStorage.getItem(STORAGE_KEYS.excludeWeekends) === 'true');
+  const [excludeHolidays, setExcludeHolidays] = useState(() => localStorage.getItem(STORAGE_KEYS.excludeHolidays) === 'true');
   
-  const [selectionMode, setSelectionMode] = useState('WORK'); 
-  const [manualOverrides, setManualOverrides] = useState({}); 
+  const [selectionMode, setSelectionMode] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.selectionMode);
+    return saved === 'LEAVE' ? 'LEAVE' : 'WORK';
+  });
+  const [manualOverrides, setManualOverrides] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.manualOverrides);
+    if (!saved) return {};
+
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.resignationDate, resignationDate);
+  }, [resignationDate]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.totalAnnualLeave, String(totalAnnualLeave));
+  }, [totalAnnualLeave]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.excludeWeekends, String(excludeWeekends));
+  }, [excludeWeekends]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.excludeHolidays, String(excludeHolidays));
+  }, [excludeHolidays]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.selectionMode, selectionMode);
+  }, [selectionMode]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.manualOverrides, JSON.stringify(manualOverrides));
+  }, [manualOverrides]);
 
   // 한국 공휴일 데이터
   const KOREAN_HOLIDAYS = useMemo(() => [
