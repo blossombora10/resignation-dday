@@ -70,6 +70,25 @@ const App = () => {
     localStorage.setItem(STORAGE_KEYS.manualOverrides, JSON.stringify(manualOverrides));
   }, [manualOverrides]);
 
+  const [showSplash, setShowSplash] = useState(true);
+  const [isSplashFading, setIsSplashFading] = useState(false);
+  const [isSplashImageError, setIsSplashImageError] = useState(false);
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setIsSplashFading(true);
+    }, 1200);
+
+    const hideTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1500);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
   // 한국 공휴일 데이터
   const KOREAN_HOLIDAYS = useMemo(() => [
     '2024-12-25', '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-03-01', '2025-05-05', '2025-05-06', '2025-06-06', '2024-08-15', '2025-10-03', '2025-10-09', '2025-12-25',
@@ -156,8 +175,9 @@ const App = () => {
   }, [resignationDate]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 flex flex-col items-center">
-      <div className="max-w-md w-full space-y-4">
+    <>
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 flex flex-col items-center">
+        <div className="max-w-md w-full space-y-4">
         
         {/* Header */}
         <header className="flex justify-between items-center py-0 px-1 -mb-2">
@@ -335,8 +355,80 @@ const App = () => {
           </p>
         </footer>
 
+        </div>
       </div>
-    </div>
+
+      {showSplash && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'linear-gradient(160deg, #00C73C 0%, #00A832 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: isSplashFading ? 0 : 1,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          {!isSplashImageError ? (
+            <img
+              src="/splash.png"
+              alt="퇴사 디데이 스플래시"
+              onError={() => setIsSplashImageError(true)}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <>
+              <div
+                style={{
+                  position: 'absolute',
+                  width: 320,
+                  height: 320,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.06)',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -60%)',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  width: 200,
+                  height: 200,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.06)',
+                  bottom: '15%',
+                  right: '-5%',
+                }}
+              />
+
+              <div
+                style={{
+                  background: 'white',
+                  borderRadius: 28,
+                  padding: 20,
+                  marginBottom: 24,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                }}
+              >
+                <img src="/logo.png" alt="퇴사 디데이 로고" style={{ width: 72, height: 72, display: 'block' }} />
+              </div>
+
+              <p style={{ color: 'white', fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: '-0.5px' }}>퇴사 디데이</p>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, marginTop: 8 }}>자유를 향한 카운트다운</p>
+            </>
+          )}
+        </div>
+      )}
+    </>
   );
 };
 
