@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon, Settings, Briefcase, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight, MousePointer2, Minus, Plus, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Calendar as CalendarIcon, Settings, Briefcase, CheckCircle2, RotateCcw, ChevronLeft, ChevronRight, MousePointer2, Minus, Plus, AlertCircle, Sun } from 'lucide-react';
 
 const STORAGE_KEYS = {
   resignationDate: 'resignationDate',
@@ -71,83 +71,114 @@ const App = () => {
   }, [manualOverrides]);
 
   // 한국 공휴일 데이터
-  const KOREAN_HOLIDAYS = useMemo(() => [
-    '2024-12-25', '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-03-01', '2025-05-05', '2025-05-06', '2025-06-06', '2024-08-15', '2025-10-03', '2025-10-09', '2025-12-25',
-    '2026-01-01', '2026-02-16', '2026-02-17', '2026-02-18', '2026-03-01', '2026-05-05', '2026-05-24', '2026-06-06', '2026-08-15', '2026-09-24', '2026-09-25', '2026-09-26', '2026-10-03', '2026-10-09', '2026-12-25'
-  ], []);
+ // 한국 공휴일 데이터
+const [koreanHolidays, setKoreanHolidays] = useState([]);
 
-  const getDateStatus = (dateStr) => {
-    if (manualOverrides[dateStr]) return manualOverrides[dateStr];
-    const date = new Date(dateStr);
-    const day = date.getDay();
-    if (excludeWeekends && (day === 0 || day === 6)) return 'OFF';
-    if (excludeHolidays && KOREAN_HOLIDAYS.includes(dateStr)) return 'OFF';
-    return 'WORK';
-  };
+useEffect(() => {
+  const fetchHolidays = async () => {
+    const apiKey = import.meta.env.VITE_HOLIDAY_API_KEY;
+    const years = [2024, 2025, 2026, 2027, 2028];
+    const allHolidays = [];
 
-  const usedLeaveInCalendar = useMemo(() => {
-    return Object.values(manualOverrides).filter(status => status === 'LEAVE').length;
-  }, [manualOverrides]);
-
-  const handleDateClick = (dateStr) => {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const target = new Date(dateStr);
-    const resignation = new Date(resignationDate);
-
-    if (target <= today || target > resignation) return;
-
-    const currentStatus = getDateStatus(dateStr);
-    const newOverrides = { ...manualOverrides };
-
-    if (selectionMode === 'WORK') {
-      newOverrides[dateStr] = (currentStatus === 'WORK' || currentStatus === 'LEAVE') ? 'OFF' : 'WORK';
-    } else if (selectionMode === 'LEAVE') {
-      if (currentStatus === 'LEAVE') {
-        newOverrides[dateStr] = 'WORK';
-      } else {
-        if (usedLeaveInCalendar >= totalAnnualLeave) return;
-        newOverrides[dateStr] = 'LEAVE';
+    for (const year of years) {
+      try {
+        const res = await fetch(
+          `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?solYear=${year}&numOfRows=50&ServiceKey=${apiKey}&_type=json`
+        );
+        const data = await res.json();
+        const items = data.response?.body?.items?.item;
+        if (items) {
+          const list = Array.isArray(items) ? items : [items];
+          list.forEach(item => {
+            const d = String(item.locdate);
+            const dateStr = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+            allHolidays.push(dateStr);
+          });
+        }
+      } catch (e) {
+        console.error(`${year} 공휴일 로딩 실패`, e);
       }
     }
-    setManualOverrides(newOverrides);
+    setKoreanHolidays(allHolidays);
   };
 
-  const counts = useMemo(() => {
-    let work = 0;
-    let calendarLeave = 0;
-    if (!resignationDate) return { work: 0, leave: 0 };
-    const start = new Date();
-    start.setHours(0,0,0,0);
-    const end = new Date(resignationDate);
-    let cur = new Date(start);
-    cur.setDate(cur.getDate() + 1);
-    while (cur <= end) {
-      const dateStr = cur.toISOString().split('T')[0];
-      const status = getDateStatus(dateStr);
-      if (status === 'WORK') work++;
-      if (status === 'LEAVE') calendarLeave++;
-      cur.setDate(cur.getDate() + 1);
-    }
-    return { work, leave: calendarLeave };
-  }, [resignationDate, manualOverrides, excludeWeekends, excludeHolidays]);
+  fetchHolidays();
+}, []);
 
-  const calendarDays = useMemo(() => {
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const lastDate = new Date(year, month + 1, 0).getDate();
-    const days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let d = 1; d <= lastDate; d++) {
-      const date = new Date(year, month, d);
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      days.push(`${y}-${m}-${day}`);
+const getDateStatus = (dateStr) => {
+  if (manualOverrides[dateStr]) return manualOverrides[dateStr];
+  const date = new Date(dateStr);
+  const day = date.getDay();
+  if (excludeWeekends && (day === 0 || day === 6)) return 'OFF';
+  if (excludeHolidays && koreanHolidays.includes(dateStr)) return 'OFF';
+  return 'WORK';
+};
+
+const usedLeaveInCalendar = useMemo(() => {
+  return Object.values(manualOverrides).filter(status => status === 'LEAVE').length;
+}, [manualOverrides]);
+
+const handleDateClick = (dateStr) => {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const target = new Date(dateStr);
+  const resignation = new Date(resignationDate);
+
+  if (target <= today || target > resignation) return;
+
+  const currentStatus = getDateStatus(dateStr);
+  const newOverrides = { ...manualOverrides };
+
+  if (selectionMode === 'WORK') {
+    newOverrides[dateStr] = (currentStatus === 'WORK' || currentStatus === 'LEAVE') ? 'OFF' : 'WORK';
+  } else if (selectionMode === 'LEAVE') {
+    if (currentStatus === 'LEAVE') {
+      newOverrides[dateStr] = 'WORK';
+    } else {
+      if (usedLeaveInCalendar >= totalAnnualLeave) return;
+      newOverrides[dateStr] = 'LEAVE';
     }
-    return days;
-  }, [viewDate]);
+  }
+  setManualOverrides(newOverrides);
+};
+
+const counts = useMemo(() => {
+  let work = 0;
+  let calendarLeave = 0;
+  if (!resignationDate) return { work: 0, leave: 0 };
+  const start = new Date();
+  start.setHours(0,0,0,0);
+  const end = new Date(resignationDate);
+  let cur = new Date(start);
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= end) {
+    const dateStr = cur.toISOString().split('T')[0];
+    const status = getDateStatus(dateStr);
+    if (status === 'WORK') work++;
+    if (status === 'LEAVE') calendarLeave++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return { work, leave: calendarLeave };
+}, [resignationDate, manualOverrides, excludeWeekends, excludeHolidays, koreanHolidays]);
+
+const calendarDays = useMemo(() => {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const days = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let d = 1; d <= lastDate; d++) {
+    const date = new Date(year, month, d);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    days.push(`${y}-${m}-${day}`);
+  }
+  return days;
+}, [viewDate]);
+
+
 
   // 포맷팅된 목표일 (YYYY.MM.DD)
   const formattedTargetDate = useMemo(() => {
@@ -156,28 +187,15 @@ const App = () => {
   }, [resignationDate]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans px-4 pb-4 pt-2 md:px-8 md:pb-8 md:pt-4 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans px-4 pb-4 pt-6 md:px-8 md:pb-8 md:pt-4 flex flex-col items-center">
       <div className="max-w-md w-full space-y-4">
         
-        {/* Header */}
-        <header className="flex justify-between items-center py-0 px-1 -mb-2">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="퇴사 디데이 로고" className="w-10 h-10 rounded-xl object-contain" />
-            <h1 className="text-xl font-bold tracking-tight text-slate-800">퇴사 디데이</h1>
-          </div>
-          <button 
-            onClick={() => {setManualOverrides({}); setTotalAnnualLeave(10);}} 
-            className="p-2 bg-white rounded-lg border border-slate-200 text-slate-400 hover:text-red-500 transition-colors shadow-sm"
-          >
-            <RotateCcw size={18} />
-          </button>
-        </header>
 
         {/* Dashboard */}
-        <div className="bg-white rounded-[40px] p-10 shadow-2xl shadow-slate-200 border border-slate-100 text-center relative overflow-hidden">
+        <div className="bg-white rounded-[40px] p-7 shadow-2xl shadow-slate-200 border border-slate-100 text-center relative overflow-hidden">
           <p className="text-slate-400 font-normal text-sm">남은 출근</p>
           <div className="flex justify-center items-baseline gap-1 mt-1 mb-9">
-            <span className="text-9xl font-black text-emerald-500 tracking-tighter leading-none">{counts.work}</span>
+            <span className="text-8xl font-black text-emerald-500 tracking-tighter leading-none">{counts.work}</span>
             <span className="text-2xl font-bold text-slate-400">번</span>
           </div>
           <div className="grid grid-cols-2 gap-3 text-left">
@@ -266,8 +284,10 @@ const App = () => {
 
         {/* Settings Group */}
         <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">기본 설정</h2>
-          
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">설정</h2>
+            <button onClick={() => { if (window.confirm("설정을 초기화하시겠습니까?")) { setManualOverrides({}); setTotalAnnualLeave(10); setResignationDate(getDefaultResignationDate()); } }} className="text-[11px] font-bold text-slate-400 hover:text-red-400 transition-colors underline underline-offset-2">초기화</button>
+          </div>          
           <div className="space-y-4">
             <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-colors focus-within:border-emerald-200 group">
               <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -285,7 +305,7 @@ const App = () => {
             </div>
 
             <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 transition-colors focus-within:border-orange-200">
-              <span className="text-sm font-bold text-slate-700">총 연차 개수</span>
+              <span className="text-sm font-bold text-slate-700 flex items-center gap-2"><Sun size={16} className="text-emerald-500" /> 총 연차 개수</span>
               <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
                 <button 
                   onClick={() => setTotalAnnualLeave(Math.max(0, totalAnnualLeave - 1))} 
@@ -326,7 +346,6 @@ const App = () => {
             </div>
           </div>
         </section>
-
         {/* Footer */}
         <footer className="text-center pb-10">
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest leading-loose">
@@ -346,7 +365,7 @@ export default App;
 // <div className="Dashboard 관련 className">
 //   <p className="text-slate-400 font-normal text-sm">남은 출근</p>
 //   <div className="flex justify-center items-baseline gap-1 mt-1 mb-9">
-//     <span className="text-9xl font-black text-emerald-500 tracking-tighter leading-none">
+//     <span className="text-7xl font-black text-emerald-500 tracking-tighter leading-none">
 //       {counts.work}
 //     </span>
 //     <span className="text-2xl font-bold text-slate-400">번</span>

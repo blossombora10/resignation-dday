@@ -3,9 +3,8 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 export default defineConfig({
   appName: 'resignation-dday',
   brand: {
-    displayName: '퇴사 디데이',
     primaryColor: '#6366F1',
-    icon: '',
+    icon: 'https://resignation-dday.vercel.app/icon.png',
   },
   web: {
     host: 'localhost',

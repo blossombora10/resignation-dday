@@ -12,6 +12,8 @@
   "dependencies": {
     "@apps-in-toss/cli": "^2.4.5",
     "@apps-in-toss/web-framework": "^2.4.5",
+    "@granite-js/plugin-sentry": "^1.0.23",
+    "@sentry/react": "^10.50.0",
     "@tailwindcss/vite": "^4.2.2",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
